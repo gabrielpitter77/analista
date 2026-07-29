@@ -70,6 +70,9 @@
   thead th .arrow{opacity:0.4; margin-left:4px;}
   tbody td{padding:11px 16px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle;}
   tbody tr:hover{background:rgba(255,255,255,0.02);}
+  .linha-analista{cursor:pointer;}
+  .linha-analista.selecionada{background:var(--blue-dim); box-shadow:0 0 0 1px var(--blue) inset;}
+  .linha-analista.selecionada:hover{background:var(--blue-dim);}
   tbody tr:last-child td{border-bottom:none;}
   td.nome{font-weight:600;}
   td.num{font-family:'IBM Plex Mono'; text-align:right;}
@@ -230,10 +233,22 @@ function renderKPIs(){
     { label: 'Normal (≤2d)', value: tg.normal, accent: 'normal' },
     { label: '% Crítico geral', value: tg.pctCritico.toFixed(0) + '%', accent: tg.pctCritico >= 50 ? 'critico' : 'atencao' }
   ];
+
+  if(SELECIONADOS.size > 0){
+    const selecionados = ANALISTAS.filter(a => SELECIONADOS.has(a.analista));
+    const totalSel = selecionados.reduce((s,a)=>s+a.total,0);
+    const criticoSel = selecionados.reduce((s,a)=>s+a.critico,0);
+    kpiData.push({
+      label: 'Selecionado (' + SELECIONADOS.size + ' analista' + (SELECIONADOS.size>1?'s':'') + ')',
+      value: totalSel + ' total · ' + criticoSel + ' crít.',
+      accent: 'blue'
+    });
+  }
   document.getElementById('kpiGrid').innerHTML = kpiData.map(function(k){
+    const tamanho = String(k.value).length > 10 ? '18px' : '28px';
     return '<div class="panel kpi accent-' + k.accent + '">' +
       '<div class="eyebrow">' + k.label + '</div>' +
-      '<div class="value mono">' + k.value + '</div>' +
+      '<div class="value mono" style="font-size:' + tamanho + '">' + k.value + '</div>' +
       '</div>';
   }).join('');
 
@@ -251,6 +266,7 @@ function renderKPIs(){
 let sortKey = 'total';
 let sortDir = -1;
 let searchTerm = '';
+let SELECIONADOS = new Set();
 
 function renderTable(){
   let rows = ANALISTAS.filter(function(a){
@@ -267,7 +283,8 @@ function renderTable(){
   });
 
   document.getElementById('tableBody').innerHTML = rows.map(function(a){
-    return '<tr>' +
+    const selecionado = SELECIONADOS.has(a.analista);
+    return '<tr class="linha-analista' + (selecionado ? ' selecionada' : '') + '" data-nome="' + a.analista.replace(/"/g,'&quot;') + '">' +
       '<td class="nome">' + a.analista + '</td>' +
       '<td class="num">' + a.total + '</td>' +
       '<td class="num">' + a.critico + '</td>' +
@@ -277,6 +294,15 @@ function renderTable(){
       '<td><div class="barra-track"><div class="barra-fill" style="width:' + a.pctCritico + '%; background:' + corBarra(a.pctCritico) + ';"></div></div></td>' +
       '</tr>';
   }).join('');
+
+  document.querySelectorAll('.linha-analista').forEach(function(tr){
+    tr.addEventListener('click', function(){
+      const nome = tr.dataset.nome;
+      if(SELECIONADOS.has(nome)) SELECIONADOS.delete(nome); else SELECIONADOS.add(nome);
+      renderTable();
+      renderKPIs();
+    });
+  });
 
   document.getElementById('rowCount').textContent = rows.length + ' analista' + (rows.length!==1?'s':'');
 }
