@@ -226,6 +226,8 @@ function renderKPIs(){
     normal: ANALISTAS.reduce((s,a)=>s+a.normal,0),
     pctCritico: 0
   };
+  // a planilha nem sempre tem a linha TOTAL GERAL: calcula a % pelos totais
+  if(tg.total > 0 && (!tg.pctCritico || !TOTAL_GERAL)) tg.pctCritico = tg.critico / tg.total * 100;
   const kpiData = [
     { label: 'Total geral', value: tg.total, accent: 'blue' },
     { label: 'Crítico (≥7d)', value: tg.critico, accent: 'critico' },
